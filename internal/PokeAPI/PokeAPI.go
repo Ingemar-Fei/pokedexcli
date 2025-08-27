@@ -3,8 +3,10 @@ package PokeAPI
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/ingemar-fei/pokedexcli/internal/PokeCache"
 	"io"
 	"net/http"
+	"time"
 )
 
 var map_page int
@@ -57,7 +59,30 @@ type Encounter struct {
 	Method           NamedAPIResource   `json:"method"`
 }
 
-func CallPokeAPI(url string) ([]byte, error) {
+var apiCache *PokeCache.Cache
+
+func init() {
+	apiCache = PokeCache.NewCache(time.Minute * 1)
+}
+
+func callPokeAPI(url string) ([]byte, error) {
+	if cacheData, ok := apiCache.Get(url); ok {
+		fmt.Println("------------------------------")
+		fmt.Println("-  Getting from pokeCache...")
+		fmt.Println("------------------------------")
+		return cacheData, nil
+	}
+	fmt.Println("------------------------------")
+	fmt.Println("-  Getting from pokeAPI...")
+	fmt.Println("------------------------------")
+	httpData, err := httpGet(url)
+	if err != nil {
+		return []byte{}, err
+	}
+	apiCache.Add(url, httpData)
+	return httpData, nil
+}
+func httpGet(url string) ([]byte, error) {
 	resp, err := http.Get(url)
 	if err != nil {
 		return []byte{}, err
@@ -91,7 +116,7 @@ func getLocationAreas(forward bool) ([]string, error) {
 	limit := 20
 	offset := (map_page - 1) * limit
 	url := fmt.Sprintf("%s?limit=%d&offset=%d", LocationAreaAPI, limit, offset)
-	resp, err := CallPokeAPI(url)
+	resp, err := callPokeAPI(url)
 	if err != nil {
 		return []string{}, err
 	}

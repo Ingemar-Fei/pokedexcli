@@ -3,10 +3,8 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"os"
-
 	"github.com/ingemar-fei/pokedexcli/internal/PokeAPI"
-	_ "github.com/ingemar-fei/pokedexcli/internal/PokeAPI"
+	"os"
 )
 
 type cliCommand struct {
@@ -17,7 +15,7 @@ type cliCommand struct {
 
 func startRepl() {
 	reader := bufio.NewScanner(os.Stdin)
-	for {
+	for true {
 		fmt.Print("Pokedex > ")
 		reader.Scan()
 		words := cleanInput(reader.Text())
