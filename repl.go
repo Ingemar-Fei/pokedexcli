@@ -4,22 +4,27 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"strings"
+
+	"github.com/ingemar-fei/pokedexcli/internal/PokeAPI"
+	_ "github.com/ingemar-fei/pokedexcli/internal/PokeAPI"
 )
+
+type cliCommand struct {
+	name        string
+	description string
+	callback    func() error
+}
 
 func startRepl() {
 	reader := bufio.NewScanner(os.Stdin)
 	for {
 		fmt.Print("Pokedex > ")
 		reader.Scan()
-
 		words := cleanInput(reader.Text())
 		if len(words) == 0 {
 			continue
 		}
-
 		commandName := words[0]
-
 		command, exists := getCommands()[commandName]
 		if exists {
 			err := command.callback()
@@ -34,18 +39,6 @@ func startRepl() {
 	}
 }
 
-func cleanInput(text string) []string {
-	output := strings.ToLower(text)
-	words := strings.Fields(output)
-	return words
-}
-
-type cliCommand struct {
-	name        string
-	description string
-	callback    func() error
-}
-
 func getCommands() map[string]cliCommand {
 	return map[string]cliCommand{
 		"help": {
@@ -58,7 +51,39 @@ func getCommands() map[string]cliCommand {
 			description: "Exit the Pokedex",
 			callback:    commandExit,
 		},
+		"map": {
+			name:        "map",
+			description: "Displays next 20 location-areas of the world",
+			callback:    commandMap,
+		},
+		"mapb": {
+			name:        "mapb",
+			description: "Displays previous 20 location-areas of the world",
+			callback:    commandMapBack,
+		},
 	}
+}
+
+func commandMapBack() error {
+	listAreas, err := PokeAPI.GetPreviousLocationAreas()
+	if err != nil {
+		return err
+	}
+	for _, area := range listAreas {
+		fmt.Println(area)
+	}
+	return nil
+}
+
+func commandMap() error {
+	listAreas, err := PokeAPI.GetNextLocationAreas()
+	if err != nil {
+		return err
+	}
+	for _, area := range listAreas {
+		fmt.Println(area)
+	}
+	return nil
 }
 
 func commandExit() error {
