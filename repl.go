@@ -10,7 +10,7 @@ import (
 type cliCommand struct {
 	name        string
 	description string
-	callback    func() error
+	callback    func(...string) error
 }
 
 func startRepl() {
@@ -23,9 +23,13 @@ func startRepl() {
 			continue
 		}
 		commandName := words[0]
+		commandArgs := []string{}
+		if len(words) > 1 {
+			commandArgs = words[1:]
+		}
 		command, exists := getCommands()[commandName]
 		if exists {
-			err := command.callback()
+			err := command.callback(commandArgs...)
 			if err != nil {
 				fmt.Println(err)
 			}
@@ -59,10 +63,32 @@ func getCommands() map[string]cliCommand {
 			description: "Displays previous 20 location-areas of the world",
 			callback:    commandMapBack,
 		},
+		"explore": {
+			name: "explore",
+			description: "explore an area and find all pokemons there",
+			callback: commandExplore,
+		},
 	}
 }
 
-func commandMapBack() error {
+func commandExplore(args ...string) error {
+	if len(args) == 0 {
+		return fmt.Errorf("Provide a locationArea name to explore")
+	}
+	locationArea := args[0]
+	fmt.Printf("Exploring : %s ...\n", locationArea)
+	pokemons, err := PokeAPI.ExploreArea(locationArea)
+	if err != nil {
+		return err
+	}
+	fmt.Println("Found pokemon:")
+	for _,pokemon := range pokemons {
+		fmt.Printf(" - %s\n",pokemon)
+	}
+	return nil
+}
+
+func commandMapBack(args ...string) error {
 	listAreas, err := PokeAPI.GetPreviousLocationAreas()
 	if err != nil {
 		return err
@@ -73,7 +99,7 @@ func commandMapBack() error {
 	return nil
 }
 
-func commandMap() error {
+func commandMap(args ...string) error {
 	listAreas, err := PokeAPI.GetNextLocationAreas()
 	if err != nil {
 		return err
@@ -84,13 +110,13 @@ func commandMap() error {
 	return nil
 }
 
-func commandExit() error {
+func commandExit(args ...string) error {
 	fmt.Println("Closing the Pokedex... Goodbye!")
 	os.Exit(0)
 	return nil
 }
 
-func commandHelp() error {
+func commandHelp(args ...string) error {
 	fmt.Println()
 	fmt.Println("Welcome to the Pokedex!")
 	fmt.Println("Usage:")

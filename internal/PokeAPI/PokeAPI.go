@@ -9,7 +9,9 @@ import (
 	"time"
 )
 
+var apiCache *PokeCache.Cache
 var map_page int
+const pokeAPIbase = "https://pokeapi.co/api/v2/"
 
 type NamedAPIResourceList struct {
 	Count    int                `json:"count"`
@@ -28,6 +30,14 @@ type LocationArea struct {
 	Name                   string                `json:"name"`
 	Game_index             int                   `json:"game_index"`
 	Encounter_method_rates []EncounterMethodRate `json:"encounter_method_rates"`
+	Location				NamedAPIResource	`json:"location"`
+	Names					[]Name				`json:"names"`
+	Pokemon_encounters		[]PokemonEncounter `json:"pokemon_encounters"`
+}
+
+type Name struct {
+	Name					string				`json:"name"` 
+	Languagei				NamedAPIResource	`json:"language"`	
 }
 
 type EncounterMethodRate struct {
@@ -58,8 +68,6 @@ type Encounter struct {
 	Chance           int                `json:"chance"`
 	Method           NamedAPIResource   `json:"method"`
 }
-
-var apiCache *PokeCache.Cache
 
 func init() {
 	apiCache = PokeCache.NewCache(time.Minute * 1)
@@ -95,6 +103,24 @@ func httpGet(url string) ([]byte, error) {
 	return resString, nil
 }
 
+func ExploreArea(locationArea string) ([]string,error){
+	url := pokeAPIbase + "location-area/" + locationArea
+	resp, err := callPokeAPI(url)
+	if err != nil {
+		return []string{}, err
+	}
+	var reqRes LocationArea
+	err = json.Unmarshal(resp, &reqRes)
+	if err != nil {
+		return []string{}, err
+	}
+	var pokeRes []string
+	for _,pokemon := range reqRes.Pokemon_encounters {
+		pokeRes = append(pokeRes,pokemon.Pokemon.Name)
+	}
+	return pokeRes,nil
+}
+
 func GetNextLocationAreas() ([]string, error) {
 	return getLocationAreas(true)
 }
@@ -112,7 +138,7 @@ func getLocationAreas(forward bool) ([]string, error) {
 		}
 		map_page--
 	}
-	LocationAreaAPI := "https://pokeapi.co/api/v2/location-area"
+	LocationAreaAPI := pokeAPIbase + "location-area"
 	limit := 20
 	offset := (map_page - 1) * limit
 	url := fmt.Sprintf("%s?limit=%d&offset=%d", LocationAreaAPI, limit, offset)
