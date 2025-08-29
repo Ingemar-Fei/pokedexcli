@@ -13,9 +13,12 @@ type cliCommand struct {
 	callback    func(...string) error
 }
 
+var myPokemon map[string]PokeAPI.Pokemon
+
 func startRepl() {
+	myPokemon = make(map[string]PokeAPI.Pokemon)
 	reader := bufio.NewScanner(os.Stdin)
-	for true {
+	for {
 		fmt.Print("Pokedex > ")
 		reader.Scan()
 		words := cleanInput(reader.Text())
@@ -64,16 +67,36 @@ func getCommands() map[string]cliCommand {
 			callback:    commandMapBack,
 		},
 		"explore": {
-			name: "explore",
+			name:        "explore",
 			description: "explore an area and find all pokemons there",
-			callback: commandExplore,
+			callback:    commandExplore,
+		},
+		"catch": {
+			name:        "catch",
+			description: "try for catching a pokemon provided",
+			callback:    commandCatch,
 		},
 	}
 }
 
+func commandCatch(args ...string) error {
+	if len(args) == 0 {
+		return fmt.Errorf("provide a pokemon name to try for catching")
+	}
+	pokemonName := args[0]
+	fmt.Printf("Throwing a Pokeball at %s...\n", pokemonName)
+	pokemon, err := PokeAPI.TryCatchPokmon(pokemonName)
+	if err != nil {
+		return err
+	}
+	fmt.Println("You caught the pokemon:", pokemonName)
+	myPokemon[pokemonName] = pokemon
+	return nil
+}
+
 func commandExplore(args ...string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("Provide a locationArea name to explore")
+		return fmt.Errorf("provide a locationArea name to explore")
 	}
 	locationArea := args[0]
 	fmt.Printf("Exploring : %s ...\n", locationArea)
@@ -82,8 +105,8 @@ func commandExplore(args ...string) error {
 		return err
 	}
 	fmt.Println("Found pokemon:")
-	for _,pokemon := range pokemons {
-		fmt.Printf(" - %s\n",pokemon)
+	for _, pokemon := range pokemons {
+		fmt.Printf(" - %s\n", pokemon)
 	}
 	return nil
 }
