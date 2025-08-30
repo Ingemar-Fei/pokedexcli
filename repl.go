@@ -76,7 +76,41 @@ func getCommands() map[string]cliCommand {
 			description: "try for catching a pokemon provided",
 			callback:    commandCatch,
 		},
+		"inspect": {
+			name:        "inspect",
+			description: "inspect a owned pokemon",
+			callback:    commandInspect,
+		},
+		"pokedex": {
+			name:        "Pokedex",
+			description: "show all pokemons you have caught",
+			callback:    commandPokedex,
+		},
 	}
+}
+
+func commandPokedex(args ...string) error {
+	fmt.Printf("Your Pokedex:\n")
+	for pokeName := range myPokemon {
+		fmt.Printf(" - %v\n", pokeName)
+	}
+	return nil
+}
+
+func commandInspect(args ...string) error {
+	if len(args) == 0 {
+		return fmt.Errorf("provide a pokemon name to try for inspection")
+	}
+	pokemonName := args[0]
+	pokemon, yes := myPokemon[pokemonName]
+	if !yes {
+		return fmt.Errorf("you have not caught that pokemon : %s", pokemonName)
+	}
+	err := PokeAPI.InspectPokemon(pokemon)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func commandCatch(args ...string) error {
@@ -89,7 +123,7 @@ func commandCatch(args ...string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("You caught the pokemon:", pokemonName)
+	fmt.Printf("You caught the pokemon: %s\n You may now inspect it with the inspect command.\n", pokemonName)
 	myPokemon[pokemonName] = pokemon
 	return nil
 }
